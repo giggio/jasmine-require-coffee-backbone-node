@@ -64,10 +64,37 @@ global.initBackbone = function () {
 
 // require specs and run them with Jasmine as soon as they're loaded
 requirejs(specs, function () {
+  var reporter = new jasmine.ConsoleReporter();
+  var oldReportRunnerResults = reporter.reportRunnerResults;
+  var assertionCount = {total: 0, passed: 0, failed: 0};
+  reporter.reportRunnerResults = function(runner) {
+    oldReportRunnerResults.apply(reporter, [runner]);
+    
 
+    var specs = runner.specs();
+    var specResults;
+
+    for (var i = 0; i < specs.length; ++i) {
+      //if (this.specFilter(specs[i])) {
+        specResults = specs[i].results();
+        assertionCount.total += specResults.totalCount;
+        assertionCount.passed += specResults.passedCount;
+        assertionCount.failed += specResults.failedCount;
+      //}
+    }
+
+    if (console && console.log) {
+      console.log('Total: ' + assertionCount.total);
+      console.log('Passed: ' + assertionCount.passed);
+      console.log('Failed: ' + assertionCount.failed);
+    }
+    process.exit(assertionCount.failed);
+  };
 	// tell Jasmine to use the boring console reporter:
-    jasmine.getEnv().addReporter(new jasmine.ConsoleReporter());
-
+  jasmine.getEnv().addReporter(reporter);
+  jasmine.specFilter = function(spec) {
+    return reporter.specFilter(spec);
+  };
 	// execute all specs
     jasmine.getEnv().execute();
 });
